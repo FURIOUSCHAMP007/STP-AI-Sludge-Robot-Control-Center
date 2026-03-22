@@ -1,0 +1,10 @@
+{
+  "name": "STP-AI Sludge Robot Control Center",
+  "description": "An advanced AI-assisted dashboard for remotely monitoring and controlling sludge removal robots in sewage treatment plants, featuring real-time gas risk prediction, sludge density analysis, and intelligent cleaning guidance.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "bluetooth",
+    "geolocation"
+  ]
+}

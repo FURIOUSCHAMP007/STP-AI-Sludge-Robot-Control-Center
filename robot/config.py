@@ -1,0 +1,11 @@
+# GPIO Pins
+# AquaVortex AI - Hardware Configuration
+
+ULTRASONICTRIGGER = 23
+ULTRASONICECHO = 24
+
+MOTORIN1 = 17
+MOTORIN2 = 18
+
+SERVOPIN = 25
+RELAYPIN = 27
