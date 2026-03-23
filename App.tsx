@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [showLiveAssistant, setShowLiveAssistant] = useState(false);
   const [isLowPower, setIsLowPower] = useState(false);
   const [isAiThrottled, setIsAiThrottled] = useState(false);
+  const [lastFrame, setLastFrame] = useState<string | null>(null);
   const [sensors, setSensors] = useState<SensorData[]>([]);
   const [robotStatus, setRobotStatus] = useState<RobotStatus>({
     connected: true,
@@ -345,6 +346,7 @@ const App: React.FC = () => {
 
   const handleCapture = async (base64: string) => {
     if (robotStatus.eStopActive) return;
+    setLastFrame(base64);
     try {
       const result = await analyzeRobotState(base64, sensors);
       
@@ -601,6 +603,7 @@ const App: React.FC = () => {
                 isSimulated={isDemoMode} 
                 isLowPower={isLowPower} 
                 aiResult={aiResult}
+                lastFrame={lastFrame}
               />
               <div className="relative">
                 <SensorGrid data={latestSensor} gasRisk={aiResult.gasRisk} sludgeHardness={aiResult.sludgeHardness} />

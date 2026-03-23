@@ -7,6 +7,7 @@ interface CameraFeedProps {
   isSimulated: boolean;
   isLowPower: boolean;
   aiResult?: AIAnalysis;
+  lastFrame?: string | null;
 }
 
 interface SimulatedScenario {
@@ -33,7 +34,7 @@ const SCENARIOS: SimulatedScenario[] = [
   }
 ];
 
-export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, isLowPower, aiResult }) => {
+export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, isLowPower, aiResult, lastFrame }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const simVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -128,24 +129,43 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
   };
 
   useEffect(() => {
+    // Skip periodic capture if we are receiving remote frames via WebSocket
+    if (lastFrame && !isSimulated && !forceLive) return;
+
     // Reduced frequency to 30s (or 60s in low power) to avoid 429 Quota Exceeded errors on free tier
     const intervalTime = isLowPower ? 60000 : 30000;
     const interval = setInterval(captureFrame, intervalTime);
     return () => clearInterval(interval);
-  }, [cameraActive, isSimulated, currentScenario, isLowPower, forceLive]);
+  }, [cameraActive, isSimulated, currentScenario, isLowPower, forceLive, lastFrame]);
 
   return (
     <div className="bg-black rounded-xl overflow-hidden relative border border-gray-700 shadow-2xl group">
-      {/* Real Video Feed */}
+      {/* Real Video Feed (Local Camera) */}
       <video 
         ref={videoRef} 
         autoPlay 
         playsInline 
-        className={`w-full aspect-video object-cover ${(cameraActive && (!isSimulated || forceLive)) ? 'block' : 'hidden'}`}
+        className={`w-full aspect-video object-cover ${(cameraActive && (!isSimulated || forceLive) && !lastFrame) ? 'block' : 'hidden'}`}
       />
 
+      {/* Remote Video Feed (Robot Camera via WebSocket) */}
+      {lastFrame && !isSimulated && !forceLive && (
+        <div className="relative w-full aspect-video bg-black">
+          <img 
+            src={`data:image/jpeg;base64,${lastFrame}`} 
+            alt="Robot Live Feed" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute top-4 right-4 flex items-center space-x-2 bg-emerald-500/20 border border-emerald-500/40 px-2 py-1 rounded backdrop-blur-sm">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Remote Live</span>
+          </div>
+        </div>
+      )}
+
       {/* Simulated Feed / Video Loops */}
-      {(!cameraActive || (isSimulated && !forceLive)) && (
+      {(!cameraActive || (isSimulated && !forceLive)) && !lastFrame && (
         <div className="relative w-full aspect-video bg-gray-900 flex items-center justify-center overflow-hidden">
            <video 
             ref={simVideoRef}
