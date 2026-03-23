@@ -164,17 +164,41 @@ export const RobotControls: React.FC<RobotControlsProps> = ({ status, onCommand 
         </div>
       </div>
 
-      <div>
+      <div className="mt-4 pt-4 border-t border-gray-700">
         <div className="flex justify-between text-[9px] text-gray-600 font-bold uppercase mb-1.5 tracking-widest">
-          <span>RPM Control</span>
-          <span className="text-emerald-500">{status.brushSpeed}%</span>
+          <span>Motor Speed (12V)</span>
+          <span className="text-emerald-500">{status.motorSpeed}%</span>
         </div>
         <input 
           type="range" 
           min="0" max="100" 
-          value={status.brushSpeed}
-          onChange={(e) => onCommand({ brushSpeed: parseInt(e.target.value) })}
-          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500" 
+          value={status.motorSpeed}
+          onChange={(e) => onCommand({ motorSpeed: parseInt(e.target.value) })}
+          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 mb-3" 
+        />
+
+        <div className="flex justify-between text-[9px] text-gray-600 font-bold uppercase mb-1.5 tracking-widest">
+          <span>Camera Pan</span>
+          <span className="text-blue-500">{status.cameraPan}°</span>
+        </div>
+        <input 
+          type="range" 
+          min="0" max="180" 
+          value={status.cameraPan}
+          onChange={(e) => onCommand({ cameraPan: parseInt(e.target.value) })}
+          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 mb-3" 
+        />
+
+        <div className="flex justify-between text-[9px] text-gray-600 font-bold uppercase mb-1.5 tracking-widest">
+          <span>Camera Tilt</span>
+          <span className="text-blue-500">{status.cameraTilt}°</span>
+        </div>
+        <input 
+          type="range" 
+          min="0" max="180" 
+          value={status.cameraTilt}
+          onChange={(e) => onCommand({ cameraTilt: parseInt(e.target.value) })}
+          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500" 
         />
       </div>
     </div>

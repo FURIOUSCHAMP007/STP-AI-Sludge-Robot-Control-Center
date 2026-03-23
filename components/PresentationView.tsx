@@ -95,45 +95,45 @@ export const PresentationView: React.FC = () => {
         </div>
       </section>
 
-      {/* Slide 5: Hardware Architecture */}
+      {/* Slide 5: System Architecture (The 3 Layers) */}
       <section className="bg-gray-900 border border-gray-800 rounded-3xl p-12 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px]"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px]"></div>
         <div className="relative z-10">
-          <h3 className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-8 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            Hardware Architecture (Pi 02W)
+          <h3 className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-8 flex items-center">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+            The 3-Layer Architecture
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-4">
-              <h4 className="text-white font-bold text-sm uppercase tracking-wider">Control Unit</h4>
+              <h4 className="text-white font-bold text-sm uppercase tracking-wider">01. The Eyes (Android)</h4>
               <div className="bg-gray-800/50 border border-gray-700 p-4 rounded-xl">
-                <ul className="text-[10px] text-gray-400 space-y-2 font-mono">
-                  <li className="flex justify-between"><span>Processor:</span> <span className="text-blue-400">RPi Zero 2 W</span></li>
-                  <li className="flex justify-between"><span>OS:</span> <span className="text-blue-400">Raspberry Pi OS Lite</span></li>
-                  <li className="flex justify-between"><span>Comm:</span> <span className="text-blue-400">WiFi / Bluetooth 4.2</span></li>
-                  <li className="flex justify-between"><span>Power:</span> <span className="text-blue-400">5V / 2.5A DC</span></li>
+                <p className="text-[10px] text-gray-400 mb-4 font-mono">CameraX Stream via WebSocket</p>
+                <ul className="text-[9px] text-gray-500 space-y-2">
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Live Frame Capture</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Base64 Compression</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Low Latency Uplink</li>
                 </ul>
               </div>
             </div>
             <div className="space-y-4">
-              <h4 className="text-white font-bold text-sm uppercase tracking-wider">GPIO Pin Mapping</h4>
-              <div className="bg-gray-800/50 border border-gray-700 p-4 rounded-xl">
-                <ul className="text-[10px] text-gray-400 space-y-2 font-mono">
-                  <li className="flex justify-between"><span>Ultrasonic (Trig/Echo):</span> <span className="text-amber-400">GPIO 23 / 24</span></li>
-                  <li className="flex justify-between"><span>Motor (L298N IN1/IN2):</span> <span className="text-amber-400">GPIO 17 / 18</span></li>
-                  <li className="flex justify-between"><span>Servo (MG995):</span> <span className="text-amber-400">GPIO 25</span></li>
-                  <li className="flex justify-between"><span>Relay (Pump):</span> <span className="text-amber-400">GPIO 27</span></li>
+              <h4 className="text-white font-bold text-sm uppercase tracking-wider">02. The Hub (Node.js)</h4>
+              <div className="bg-emerald-900/10 border border-emerald-500/30 p-4 rounded-xl">
+                <p className="text-[10px] text-emerald-400 mb-4 font-mono">Central Message Broker</p>
+                <ul className="text-[9px] text-gray-400 space-y-2">
+                  <li className="flex items-center"><span className="w-1 h-1 bg-emerald-500 mr-2"></span>WebSocket Relay</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-emerald-500 mr-2"></span>Telemetry Aggregation</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-emerald-500 mr-2"></span>AI Decision Routing</li>
                 </ul>
               </div>
             </div>
             <div className="space-y-4">
-              <h4 className="text-white font-bold text-sm uppercase tracking-wider">Actuators</h4>
-              <div className="bg-gray-800/50 border border-gray-700 p-4 rounded-xl">
-                <ul className="text-[10px] text-gray-400 space-y-2 font-mono">
-                  <li className="flex justify-between"><span>Movement:</span> <span className="text-emerald-400">DC Geared Motors</span></li>
-                  <li className="flex justify-between"><span>Vibration:</span> <span className="text-emerald-400">ERM Plate (PWM)</span></li>
-                  <li className="flex justify-between"><span>Suction:</span> <span className="text-emerald-400">Submersible Pump</span></li>
-                  <li className="flex justify-between"><span>Bucket:</span> <span className="text-emerald-400">Servo-Actuated Arm</span></li>
+              <h4 className="text-white font-bold text-sm uppercase tracking-wider">03. The Brain (Gemini AI)</h4>
+              <div className="bg-blue-900/10 border border-blue-500/30 p-4 rounded-xl">
+                <p className="text-[10px] text-blue-400 mb-4 font-mono">Gemini 3 Flash Vision</p>
+                <ul className="text-[9px] text-gray-400 space-y-2">
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Visual Reasoning</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Adaptive Control Logic</li>
+                  <li className="flex items-center"><span className="w-1 h-1 bg-blue-500 mr-2"></span>Safety Protocol Enforcement</li>
                 </ul>
               </div>
             </div>
@@ -155,8 +155,8 @@ export const PresentationView: React.FC = () => {
 {`# AquaVortex AI - Multi-Mode Control Loop
 def run():
     while True:
-        # 1. Check Bluetooth for Mode Switch (AUTO/MANUAL)
-        cmd = listen_bt_commands()
+        # 1. Listen for WebSocket Commands (AUTO/MANUAL)
+        cmd = listen_ws_commands()
         if cmd.mode == "MANUAL":
             execute_manual_override(cmd)
             continue
@@ -164,11 +164,11 @@ def run():
         # 2. Autonomous Mode: Read sensors
         sensor_data = get_telemetry()
 
-        # 3. Get AI decision from Gemini 3 Flash
-        ai_response = get_ai_decision(sensor_data)
+        # 3. Decision Hub: Gemini 3 Flash processes vision
+        # (Decision relayed via Dashboard/Server)
         
-        # 4. Execute actions (Move, Vibrate, Suction, Bucket)
-        execute_hardware_commands(ai_response)`}
+        # 4. Execute actions (Move, Vibrate, Suction)
+        execute_hardware_commands(cmd.ai_decision)`}
           </pre>
         </div>
       </section>

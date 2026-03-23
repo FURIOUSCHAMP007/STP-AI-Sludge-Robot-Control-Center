@@ -1,10 +1,12 @@
 
 import React, { useRef, useEffect, useState } from 'react';
+import { AIAnalysis } from '../types';
 
 interface CameraFeedProps {
   onCapture: (base64: string) => void;
   isSimulated: boolean;
   isLowPower: boolean;
+  aiResult?: AIAnalysis;
 }
 
 interface SimulatedScenario {
@@ -31,7 +33,7 @@ const SCENARIOS: SimulatedScenario[] = [
   }
 ];
 
-export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, isLowPower }) => {
+export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, isLowPower, aiResult }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const simVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,23 +42,30 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
   const [selectedDevice, setSelectedDevice] = useState<string>('');
   const [cameraActive, setCameraActive] = useState(false);
   const [currentScenario, setCurrentScenario] = useState<SimulatedScenario>(SCENARIOS[1]);
+  const [forceLive, setForceLive] = useState(false);
 
   useEffect(() => {
-    async function getDevices() {
+    async function initDevices() {
       try {
+        // Request initial permission to get labels
+        await navigator.mediaDevices.getUserMedia({ video: true });
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = allDevices.filter(d => d.kind === 'videoinput');
         setDevices(videoDevices);
         if (videoDevices.length > 0) setSelectedDevice(videoDevices[0].deviceId);
       } catch (err) {
-        console.warn("Could not list devices", err);
+        console.warn("Could not list devices or permission denied", err);
+        // Still try to enumerate even if getUserMedia fails
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = allDevices.filter(d => d.kind === 'videoinput');
+        setDevices(videoDevices);
       }
     }
-    getDevices();
+    initDevices();
   }, []);
 
   useEffect(() => {
-    if (!selectedDevice || isSimulated) {
+    if (!selectedDevice) {
       setCameraActive(false);
       return;
     }
@@ -78,14 +87,28 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
     }
     startCamera();
     return () => stream?.getTracks().forEach(t => t.stop());
-  }, [selectedDevice, isSimulated]);
+  }, [selectedDevice]);
 
-  const captureFrame = () => {
-    if (canvasRef.current) {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    setIsAnalyzing(false);
+  }, [aiResult]);
+
+  const [flash, setFlash] = useState(false);
+
+  const captureFrame = async () => {
+    if (canvasRef.current && !isAnalyzing) {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 100);
+      setIsAnalyzing(true);
       const context = canvasRef.current.getContext('2d');
-      if (!context) return;
+      if (!context) {
+        setIsAnalyzing(false);
+        return;
+      }
 
-      if (cameraActive && videoRef.current && !isSimulated) {
+      if (cameraActive && videoRef.current && (!isSimulated || forceLive)) {
         context.drawImage(videoRef.current, 0, 0, 640, 480);
       } else if (simVideoRef.current) {
         context.drawImage(simVideoRef.current, 0, 0, 640, 480);
@@ -109,7 +132,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
     const intervalTime = isLowPower ? 60000 : 30000;
     const interval = setInterval(captureFrame, intervalTime);
     return () => clearInterval(interval);
-  }, [cameraActive, isSimulated, currentScenario, isLowPower]);
+  }, [cameraActive, isSimulated, currentScenario, isLowPower, forceLive]);
 
   return (
     <div className="bg-black rounded-xl overflow-hidden relative border border-gray-700 shadow-2xl group">
@@ -118,11 +141,11 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
         ref={videoRef} 
         autoPlay 
         playsInline 
-        className={`w-full aspect-video object-cover ${(cameraActive && !isSimulated) ? 'block' : 'hidden'}`}
+        className={`w-full aspect-video object-cover ${(cameraActive && (!isSimulated || forceLive)) ? 'block' : 'hidden'}`}
       />
 
       {/* Simulated Feed / Video Loops */}
-      {(!cameraActive || isSimulated) && (
+      {(!cameraActive || (isSimulated && !forceLive)) && (
         <div className="relative w-full aspect-video bg-gray-900 flex items-center justify-center overflow-hidden">
            <video 
             ref={simVideoRef}
@@ -135,11 +158,23 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
           />
           
           {/* Simulation Overlay */}
-          <div className="z-10 pointer-events-none text-center">
+          <div className="z-10 text-center">
             <div className="inline-block animate-pulse mb-2 px-3 py-1 bg-emerald-600/20 border border-emerald-500 rounded text-emerald-500 text-[10px] font-bold uppercase tracking-widest">
-              AI Simulation Stream
+              {isSimulated ? 'AI Simulation Stream' : 'Camera Feed Inactive'}
             </div>
-            <p className="text-gray-400 text-[10px] font-mono opacity-50">NODE ID: SLUDGE BOT SIM 001</p>
+            <p className="text-gray-400 text-[10px] font-mono opacity-50 mb-4">NODE ID: SLUDGE BOT SIM 001</p>
+            
+            {(!cameraActive || (isSimulated && !forceLive)) && (
+              <button 
+                onClick={() => {
+                  if (!cameraActive) setSelectedDevice(devices[0]?.deviceId || '');
+                  setForceLive(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-xs font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+              >
+                Start Laptop Camera
+              </button>
+            )}
           </div>
 
           {/* Source Switcher for Demo */}
@@ -165,6 +200,46 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
         </div>
       )}
 
+      {/* AI Intelligence Overlay */}
+      {aiResult && (
+        <div className="absolute inset-0 pointer-events-none z-30">
+          {/* Bounding Box Simulation */}
+          <div className="absolute top-1/4 left-1/4 w-1/2 h-1/2 border-2 border-emerald-500/50 rounded-lg">
+            <div className="absolute -top-6 left-0 bg-emerald-500 text-black text-[10px] font-black px-2 py-0.5 uppercase">
+              {aiResult.sludgeLevel} DENSITY SLUDGE Detected
+            </div>
+            <div className="absolute -bottom-6 right-0 text-emerald-500 text-[8px] font-mono">
+              CONFIDENCE: {aiResult.confidence}%
+            </div>
+          </div>
+
+          {/* HUD Elements */}
+          <div className="absolute top-16 left-4 space-y-1">
+             <div className="flex items-center space-x-2 bg-black/40 px-2 py-0.5 rounded border border-emerald-500/20">
+                <span className="text-[9px] text-emerald-500 font-bold uppercase">AI_STATE:</span>
+                <span className="text-[9px] text-white font-mono">{aiResult.recommendation.slice(0, 30)}...</span>
+             </div>
+             <div className="flex items-center space-x-2 bg-black/40 px-2 py-0.5 rounded border border-blue-500/20">
+                <span className="text-[9px] text-blue-400 font-bold uppercase">TARGET:</span>
+                <span className="text-[9px] text-white font-mono">{aiResult.targetZone}</span>
+             </div>
+          </div>
+
+          <div className="absolute bottom-16 left-4">
+             <div className="bg-black/60 border border-emerald-500/30 p-2 rounded backdrop-blur-sm">
+                <div className="text-[8px] text-emerald-500 font-bold uppercase mb-1">Vision Analysis</div>
+                <div className="flex flex-wrap gap-1">
+                   {aiResult.vision?.objects.map((obj, i) => (
+                      <span key={i} className="text-[8px] bg-emerald-500/20 text-emerald-300 px-1 rounded border border-emerald-500/30">
+                         {obj.toUpperCase()}
+                      </span>
+                   ))}
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       <canvas ref={canvasRef} width={640} height={480} className="hidden" />
       
       <div className="absolute top-4 left-4 bg-gray-900/80 px-3 py-1.5 rounded-md text-xs font-mono border border-gray-700 backdrop-blur-sm flex items-center space-x-2 z-20">
@@ -173,7 +248,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
       </div>
 
       <div className="absolute bottom-4 right-4 flex space-x-2 z-20">
-        {!isSimulated && devices.length > 0 && (
+        {devices.length > 0 && (
           <select 
             className="bg-gray-900/80 border border-gray-700 text-xs px-2 py-1 rounded outline-none text-gray-300"
             value={selectedDevice}
@@ -186,13 +261,24 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
         )}
         <button 
           onClick={captureFrame}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold transition-colors shadow-lg active:scale-95"
+          disabled={isAnalyzing}
+          className={`bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center space-x-2 ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          ANALYSIS SYNC
+          {isAnalyzing ? (
+            <>
+              <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>ANALYZING...</span>
+            </>
+          ) : (
+            <span>ANALYSIS SYNC</span>
+          )}
         </button>
       </div>
       
       <div className="absolute inset-0 pointer-events-none border border-emerald-500/10 group-hover:border-emerald-500/20 transition-all"></div>
+      
+      {/* Flash Effect */}
+      {flash && <div className="absolute inset-0 bg-white z-50 pointer-events-none"></div>}
     </div>
   );
 };

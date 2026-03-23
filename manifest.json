@@ -1,0 +1,21 @@
+{
+  "name": "AquaVortex AI",
+  "short_name": "AquaVortex",
+  "description": "AI-Powered Sludge Management Robot Control Center",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/aquavortex/192/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://picsum.photos/seed/aquavortex/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

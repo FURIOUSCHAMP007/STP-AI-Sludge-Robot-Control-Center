@@ -1,0 +1,6 @@
+{
+  "appId": "com.aquavortex.ai",
+  "appName": "AquaVortex AI",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

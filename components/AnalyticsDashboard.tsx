@@ -1,9 +1,12 @@
 
 import React from 'react';
-import { SensorData } from '../types';
+import { SensorData, AIAnalysis } from '../types';
+import { TankMap3D } from './TankMap3D';
 
 interface AnalyticsDashboardProps {
   sensors: SensorData[];
+  aiResult: AIAnalysis;
+  robotPosition: { x: number; y: number };
 }
 
 const ChartCard: React.FC<{
@@ -82,7 +85,7 @@ const ChartCard: React.FC<{
   );
 };
 
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sensors }) => {
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sensors, aiResult, robotPosition }) => {
   if (sensors.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500 font-mono italic">
@@ -94,7 +97,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sensors 
   const sludgeThicknessData = sensors.map(s => Math.max(0, s.tankDepth - s.ultrasonicReading));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
+      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
+          <div className="flex items-center space-x-3">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-300">Spatial Intelligence Engine</h3>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-[10px] font-mono text-gray-600">SECTOR: ALPHA-09</span>
+            <span className="text-[10px] font-mono text-blue-500/70">VIRTUAL_RECON_ACTIVE</span>
+          </div>
+        </div>
+        <TankMap3D sensors={sensors} aiResult={aiResult} robotPosition={robotPosition} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ChartCard 
           title="Hydrogen Sulfide (H2S)" 

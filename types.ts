@@ -32,6 +32,17 @@ export interface SensorData {
   vibrationFrequency: number; // Hz
   torqueFeedback: number; // Nm
   position: { x: number; y: number }; // Robot position in meters (0-10)
+  distance_cm?: number;
+  ir_left?: number;
+  ir_right?: number;
+  gas_raw?: number;
+}
+
+export interface VisionAnalysis {
+  objects: string[];
+  sludge_level: 'low' | 'medium' | 'high';
+  environment: string;
+  risk_level: 'low' | 'medium' | 'high';
 }
 
 export interface AIAnalysis {
@@ -53,6 +64,15 @@ export interface AIAnalysis {
   predictedFailureDays: number; // Days until predicted failure
   anomalyDetected: boolean; // Flag for time-series anomaly
   confidence: number; // AI confidence percentage
+  command?: {
+    device: string;
+    action: string;
+    speed: number;
+    angle?: number;
+  };
+  reason?: string;
+  priority?: 'low' | 'medium' | 'high';
+  vision?: VisionAnalysis;
 }
 
 export interface RobotStatus {
@@ -66,6 +86,9 @@ export interface RobotStatus {
   vibrationAmplitude: number; // Current set amplitude
   bucketPosition: number; // Servo position -1 to 1
   isAutonomous: boolean;
+  cameraPan: number; // 0-180
+  cameraTilt: number; // 0-180
+  motorSpeed: number; // 0-100% (12V PWM)
 }
 
 export interface SafetyConfig {

@@ -1,43 +1,49 @@
 import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import cors from "cors";
+import { createServer as createHttpServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 
 async function startServer() {
   const app = express();
+  const httpServer = createHttpServer(app);
+  const wss = new WebSocketServer({ server: httpServer });
   const PORT = 3000;
 
-  app.use(cors());
+  // Track connected clients
+  const clients = new Set<WebSocket>();
 
-  const server = http.createServer(app);
-  const io = new Server(server, {
-    cors: { origin: "*" }
+  wss.on("connection", (ws) => {
+    console.log("New WebSocket connection established.");
+    clients.add(ws);
+
+    ws.on("message", (message) => {
+      console.log(`Received message: ${message}`);
+      
+      // Broadcast the message to all other connected clients
+      // This allows the React dashboard to send commands to the Pi
+      const data = message.toString();
+      clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(data);
+        }
+      });
+    });
+
+    ws.on("close", () => {
+      console.log("WebSocket connection closed.");
+      clients.delete(ws);
+    });
+
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+      clients.delete(ws);
+    });
   });
 
-  let botSocket: any = null;
-
-  io.on("connection", (socket) => {
-    console.log(`🔌 Connected: ${socket.id}`);
-
-    // 1. FROM DASHBOARD -> TO ROBOT
-    socket.on('bot_move', (data) => {
-      io.emit('bot_move', data); 
-    });
-
-    socket.on('bot_bucket', (data) => {
-      io.emit('bot_bucket', data);
-    });
-
-    // 2. FROM ROBOT -> TO DASHBOARD
-    socket.on('sensor_update', (data) => {
-      io.emit('sensor_update', data);
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`❌ Disconnected: ${socket.id}`);
-    });
+  // API routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", connections: clients.size });
   });
 
   // Vite middleware for development
@@ -48,16 +54,19 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
-  server.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`WebSocket server active on ws://localhost:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+});
