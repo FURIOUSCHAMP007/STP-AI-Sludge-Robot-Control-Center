@@ -68,83 +68,13 @@ const App: React.FC = () => {
   });
   const [logs, setLogs] = useState<{msg: string, type: 'info'|'warn'|'err'}[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    // Connect to the standard WebSocket server
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      addLog("Connected to Hardware Relay Server", 'info');
-      setRobotStatus(prev => ({ ...prev, connected: true }));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        // Handle camera frames from the Android phone
-        if (data.type === 'camera_frame' && data.image) {
-          handleCapture(data.image);
-        }
-
-        // Handle telemetry from the bot
-        if (data.type === 'telemetry' || data.device === 'sensors') {
-          const sensorData = data.sensors || data;
-          const latestData: SensorData = {
-            h2s: sensorData.h2s || 0,
-            methane: sensorData.methane || 0,
-            motorCurrent: sensorData.motorCurrent || 0,
-            tilt: sensorData.tilt || { x: 0, y: 0, z: 0 },
-            timestamp: Date.now(),
-            battery: sensorData.battery || 100,
-            batteryVoltage: sensorData.batteryVoltage || 24,
-            temperature: sensorData.temperature || 30,
-            isOffline: false,
-            ultrasonicReading: sensorData.distance_cm || sensorData.ultrasonicReading || 100,
-            tankDepth: 100,
-            vibrationFrequency: sensorData.vibrationFrequency || 0,
-            torqueFeedback: sensorData.torqueFeedback || 0,
-            position: sensorData.position || { x: 0, y: 0 },
-            distance_cm: sensorData.distance_cm,
-            ir_left: sensorData.ir_left,
-            ir_right: sensorData.ir_right,
-            gas_raw: sensorData.gas_raw
-          };
-
-          setSensors(prev => [...prev.slice(-59), latestData]);
-          
-          if (robotStatus.isAutonomous && !robotStatus.eStopActive) {
-            triggerAutoAI(latestData);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse WebSocket message:", e);
-      }
-    };
-
-    ws.onclose = () => {
-      addLog("Disconnected from Hardware Relay Server", 'warn');
-      setRobotStatus(prev => ({ ...prev, connected: false }));
-      // Reconnect logic
-      setTimeout(() => {
-        addLog("Attempting to reconnect...", 'info');
-        // This will trigger the effect again if we used a state for URL, 
-        // but here we just wait for manual refresh or implement a better retry
-      }, 5000);
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, []);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const lastAiTriggerTime = useRef<number>(0);
   const triggerAutoAI = useCallback(async (currentData: SensorData) => {
     const now = Date.now();
-    // Throttle AI calls to once every 10 seconds in auto mode
-    if (now - lastAiTriggerTime.current < 10000) return;
+    // Throttle AI calls to once every 20 seconds in auto mode
+    if (now - lastAiTriggerTime.current < 20000) return;
     
     lastAiTriggerTime.current = now;
     addLog("AUTO-AI: Initiating Dual-Layer Analysis (Vision + Decision)...", 'info');
@@ -345,8 +275,8 @@ const App: React.FC = () => {
   }, [isDemoMode, robotStatus.cleaning, checkSafetyViolations, isLowPower]);
 
   const handleCapture = async (base64: string) => {
-    if (robotStatus.eStopActive) return;
     setLastFrame(base64);
+    if (robotStatus.eStopActive) return;
     try {
       const result = await analyzeRobotState(base64, sensors);
       
@@ -506,6 +436,96 @@ const App: React.FC = () => {
       return [...prev.slice(0, -1), updated];
     });
   };
+
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    // Connect to the standard WebSocket server
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      addLog("Connected to Hardware Relay Server", 'info');
+      setRobotStatus(prev => ({ ...prev, connected: true }));
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Handle camera frames from the Android phone
+        if ((data.type === 'camera_frame' || data.image) && data.image) {
+          console.log("Received camera frame from robot, length:", data.image.length);
+          handleCapture(data.image);
+        }
+
+        // Handle telemetry from the bot
+        if (data.type === 'telemetry' || data.device === 'sensors') {
+          const sensorData = data.sensors || data;
+          const latestData: SensorData = {
+            h2s: sensorData.h2s || 0,
+            methane: sensorData.methane || 0,
+            motorCurrent: sensorData.motorCurrent || 0,
+            tilt: sensorData.tilt || { x: 0, y: 0, z: 0 },
+            timestamp: Date.now(),
+            battery: sensorData.battery || 100,
+            batteryVoltage: sensorData.batteryVoltage || 24,
+            temperature: sensorData.temperature || 30,
+            isOffline: false,
+            ultrasonicReading: sensorData.distance_cm || sensorData.ultrasonicReading || 100,
+            tankDepth: 100,
+            vibrationFrequency: sensorData.vibrationFrequency || 0,
+            torqueFeedback: sensorData.torqueFeedback || 0,
+            position: sensorData.position || { x: 0, y: 0 },
+            distance_cm: sensorData.distance_cm,
+            ir_left: sensorData.ir_left,
+            ir_right: sensorData.ir_right,
+            gas_raw: sensorData.gas_raw
+          };
+
+          setSensors(prev => [...prev.slice(-59), latestData]);
+          
+          if (robotStatus.isAutonomous && !robotStatus.eStopActive) {
+            triggerAutoAI(latestData);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse WebSocket message:", e);
+      }
+    };
+
+    ws.onclose = () => {
+      addLog("Disconnected from Hardware Relay Server", 'warn');
+      setRobotStatus(prev => ({ ...prev, connected: false }));
+      
+      // Attempt to reconnect every 5 seconds
+      if (!reconnectTimeoutRef.current) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          addLog("Attempting to reconnect...", 'info');
+          reconnectTimeoutRef.current = null;
+          connectWebSocket();
+        }, 5000);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+      ws.close();
+    };
+  }, [handleCapture, triggerAutoAI, robotStatus.isAutonomous, robotStatus.eStopActive]);
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, [connectWebSocket]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-950 font-sans selection:bg-emerald-500/30">

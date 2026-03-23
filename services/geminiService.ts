@@ -261,11 +261,22 @@ export async function analyzeRobotState(
 
     return await makeDecision(sensors, vision, apiKey);
   } catch (err: any) {
+    const errorStr = JSON.stringify(err);
     const errorMessage = err?.message || "";
-    const isQuotaError = errorMessage.includes("429") || errorMessage.includes("RESOURCE EXHAUSTED") || errorMessage.includes("quota");
+    const isQuotaError = 
+      errorStr.includes("429") || 
+      errorStr.includes("RESOURCE_EXHAUSTED") || 
+      errorStr.toLowerCase().includes("quota") ||
+      errorMessage.includes("429") || 
+      errorMessage.includes("RESOURCE_EXHAUSTED") || 
+      errorMessage.toLowerCase().includes("quota");
 
     if (isQuotaError) {
       console.warn("Gemini AI Quota Exceeded. Switching to Local Heuristic Engine.");
+      return {
+        ...getLocalHeuristicAnalysis(sensors),
+        recommendation: "[QUOTA EXCEEDED] Gemini AI limit reached. Using Local Heuristic Engine for safety."
+      };
     } else {
       console.error("Gemini AI API Error:", err);
     }

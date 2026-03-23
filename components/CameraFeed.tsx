@@ -132,8 +132,8 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
     // Skip periodic capture if we are receiving remote frames via WebSocket
     if (lastFrame && !isSimulated && !forceLive) return;
 
-    // Reduced frequency to 30s (or 60s in low power) to avoid 429 Quota Exceeded errors on free tier
-    const intervalTime = isLowPower ? 60000 : 30000;
+    // Reduced frequency to 45s (or 90s in low power) to avoid 429 Quota Exceeded errors on free tier
+    const intervalTime = isLowPower ? 90000 : 45000;
     const interval = setInterval(captureFrame, intervalTime);
     return () => clearInterval(interval);
   }, [cameraActive, isSimulated, currentScenario, isLowPower, forceLive, lastFrame]);
@@ -144,15 +144,16 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
       <video 
         ref={videoRef} 
         autoPlay 
+        muted
         playsInline 
-        className={`w-full aspect-video object-cover ${(cameraActive && (!isSimulated || forceLive) && !lastFrame) ? 'block' : 'hidden'}`}
+        className={`w-full aspect-video object-cover ${(cameraActive && (!isSimulated || forceLive)) ? 'block' : 'hidden'}`}
       />
 
       {/* Remote Video Feed (Robot Camera via WebSocket) */}
-      {lastFrame && !isSimulated && !forceLive && (
+      {lastFrame && !forceLive && (
         <div className="relative w-full aspect-video bg-black">
           <img 
-            src={`data:image/jpeg;base64,${lastFrame}`} 
+            src={lastFrame.startsWith('data:') ? lastFrame : `data:image/jpeg;base64,${lastFrame}`} 
             alt="Robot Live Feed" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -165,7 +166,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({ onCapture, isSimulated, 
       )}
 
       {/* Simulated Feed / Video Loops */}
-      {(!cameraActive || (isSimulated && !forceLive)) && !lastFrame && (
+      {(!cameraActive || (isSimulated && !forceLive)) && !lastFrame && !forceLive && (
         <div className="relative w-full aspect-video bg-gray-900 flex items-center justify-center overflow-hidden">
            <video 
             ref={simVideoRef}
